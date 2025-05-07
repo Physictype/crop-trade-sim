@@ -1,10 +1,13 @@
 import htm from "htm";
 import { h, render } from "preact";
 const html = htm.bind(h);
-import { firebaseApp, firebaseAuth } from "../firebase.js";
-import { sendSignInLinkToEmail } from "firebase/auth";
+import { firestore } from "../firebase.js";
+import { doc, getDoc } from "firebase/firestore";
 
-export function renderElement(container) {
-	const htmlElement = html` <div>hello.</div> `;
+export async function renderElement(container, args) {
+	const htmlElement = html` <div>Game ID <span id="gameId"></span></div> `;
 	render(htmlElement, container);
+	document.getElementById("gameId").innerText = args["gameId"];
+	var gameDoc = await getDoc(doc(firestore, "games", args["gameId"]));
+	console.log(gameDoc.data());
 }

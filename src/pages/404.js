@@ -4,7 +4,7 @@ const html = htm.bind(h);
 import { firebaseApp, firebaseAuth } from "../firebase.js";
 import { sendSignInLinkToEmail } from "firebase/auth";
 
-export function renderElement(container) {
+export function renderElement(container,args) {
 	const htmlElement = html` <div>404 RAHHHH</div> `;
 	render(htmlElement, container);
 }
