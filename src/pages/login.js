@@ -14,7 +14,7 @@ export function renderElement(container, args) {
 				id="sendLink"
 				class="rounded-xl bg-blue-500 p-2 text-amber-50"
 			>
-				Send Link
+				Send Link (I love the fact I'm just using this for tests)
 			</button>
 		</div>
 	`;
@@ -27,6 +27,8 @@ export function renderElement(container, args) {
 				userId: 1,
 				title: "Fix my bugs",
 				completed: false,
+				seed: "wheat",
+				count: 20,
 			}),
 			headers: {
 				"Content-type": "application/json; charset=UTF-8",
