@@ -25,10 +25,11 @@ export function renderElement(container, args) {
 			method: "POST",
 			body: JSON.stringify({
 				userId: 1,
+				gameId: 28291038,
 				title: "Fix my bugs",
 				completed: false,
 				seed: "wheat",
-				count: 20,
+				count: 1,
 			}),
 			headers: {
 				"Content-type": "application/json; charset=UTF-8",
