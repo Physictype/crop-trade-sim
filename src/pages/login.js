@@ -23,6 +23,7 @@ export function renderElement(container, args) {
 	document.getElementById("sendLink").addEventListener("click", function () {
 		fetch("https://localhost:3000/buySeed", {
 			method: "POST",
+            credentials: 'include',
 			body: JSON.stringify({
 				userId: 1,
 				gameId: 28291038,
