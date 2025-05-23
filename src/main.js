@@ -4,6 +4,7 @@ const routes = {
 	"/": () => import("/pages/main.js"),
 	"/game": () => import("/pages/game.js"),
 	"/404": () => import("/pages/404.js"),
+	"/finishLogin": () => import("/pages/finishLogin.js"),
 	// "/dashboard": () => import("./pages/dashboard.js"),
 	// "/verify": () => import("./pages/verify.js"),
 };
