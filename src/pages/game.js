@@ -17,9 +17,18 @@ export async function renderElement(container, args) {
 				id="seeds"
 			></div>
 		</div>
+		<div
+			class="pointer-events-none absolute h-15 w-20 bg-amber-300"
+			id="tooltip"
+		></div>
 	</div>`;
 	render(htmlElement, container);
 	let plot = document.getElementById("plot");
+	var gameDoc = doc(firestore, "games", args["gameId"]);
+	var cropsList = (await getDoc(gameDoc)).data().cropsList;
+
+	let tooltip = { element: document.getElementById("tooltip"), numHover: 0 };
+
 	for (let i = 0; i < 25; i++) {
 		let cell = document.createElement("div");
 		cell.innerText = "";
@@ -40,11 +49,24 @@ export async function renderElement(container, args) {
 
 			cell.style.backgroundImage = "url('/crops/" + "wheat" + ".png')";
 		});
+		cell.addEventListener("mouseenter", function () {
+			tooltip.numHover += 1;
+			tooltip.element.style.opacity = 1;
+		});
+		cell.addEventListener("mouseleave", function () {
+			tooltip.numHover -= 1;
+			if (tooltip.numHover == 0) {
+				tooltip.element.style.opacity = 0;
+			}
+		});
+		cell.addEventListener("mousemove", function (e) {
+			tooltip.element.style.left = e.clientX + "px";
+			tooltip.element.style.top = e.clientY + "px";
+			tooltip.element.innerText = cell.style.backgroundImage;
+		});
 		plot.appendChild(cell);
 	}
 	document.getElementById("gameId").innerText = args["gameId"];
-	var gameDoc = doc(firestore, "games", args["gameId"]);
-	var cropsList = (await getDoc(gameDoc)).data().cropsList;
 	var seedButtons = {};
 	cropsList.forEach((crop) => {
 		console.log(crop);
@@ -93,6 +115,7 @@ export async function renderElement(container, args) {
 	Object.keys(playerData.crops).forEach((key) => {
 		console.log(playerData.crops[key]);
 	});
+
 	// REMOVE!!! replace with client logic.
 	// onSnapshot(playerRef, (docSnap) => {
 	// 	if (docSnap.exists()) {
