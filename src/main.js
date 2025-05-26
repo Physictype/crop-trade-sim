@@ -17,6 +17,7 @@ async function loadRoute() {
 	if (path.includes("game")) {
 		route = routes["/game"];
 		args["gameId"] = path.substring(6);
+		args["playerId"] = "1";
 	} else {
 		route = routes[path] || routes["/404"];
 	}
