@@ -4,6 +4,13 @@ const html = htm.bind(h);
 import { firestore } from "../firebase.js";
 import { doc, collection, getDoc, onSnapshot } from "firebase/firestore";
 
+function uto0(x) {
+	if (x == null) {
+		return 0;
+	}
+	return x;
+}
+
 export async function renderElement(container, args) {
 	const htmlElement = html`<div>
 		Game ID <span id="gameId"></span>
@@ -12,85 +19,36 @@ export async function renderElement(container, args) {
 				class="grid size-100 grid-cols-5 grid-rows-5 border-2 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
 				id="plot"
 			></div>
-			<div
-				class="grid-rows-auto grid h-150 w-30 grid-cols-2 grid-rows-10 gap-2 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
-				id="seeds"
-			></div>
+			<div class="border-4 p-2">
+				<h3 class="text-center">Seeds</h3>
+				<div
+					class="grid-rows-auto grid h-90 w-30 grid-cols-2 grid-rows-6 gap-2 [&>*]:relative [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+					id="seeds"
+				></div>
+			</div>
 		</div>
 		<div
-			class="pointer-events-none absolute h-15 w-20 bg-amber-300"
+			class="pointer-events-none absolute m-1 h-37 w-50 bg-amber-300 p-2 opacity-0"
 			id="tooltip"
 		></div>
+		<button id="test">test</button>
 	</div>`;
 	render(htmlElement, container);
+	document.getElementById("test").addEventListener("click", (e) => {
+		fetch("http://localhost:3000/startGame", {
+			method: "POST",
+			credentials: "include",
+			body: JSON.stringify({
+				userId: "1",
+				gameId: args["gameId"],
+			}),
+			headers: {
+				"Content-type": "application/json; charset=UTF-8",
+			},
+		});
+	});
 	let plot = document.getElementById("plot");
 	var gameDoc = doc(firestore, "games", args["gameId"]);
-	var cropsList = (await getDoc(gameDoc)).data().cropsList;
-
-	let tooltip = { element: document.getElementById("tooltip"), numHover: 0 };
-
-	for (let i = 0; i < 25; i++) {
-		let cell = document.createElement("div");
-		cell.innerText = "";
-		cell.addEventListener("click", function () {
-			fetch("http://localhost:3000/plantSeed", {
-				method: "POST",
-				credentials: "include",
-				body: JSON.stringify({
-					userId: "1",
-					gameId: "28291038",
-					seed: "wheat",
-					idx: i,
-				}),
-				headers: {
-					"Content-type": "application/json; charset=UTF-8",
-				},
-			});
-
-			cell.style.backgroundImage = "url('/crops/" + "wheat" + ".png')";
-		});
-		cell.addEventListener("mouseenter", function () {
-			tooltip.numHover += 1;
-			tooltip.element.style.opacity = 1;
-		});
-		cell.addEventListener("mouseleave", function () {
-			tooltip.numHover -= 1;
-			if (tooltip.numHover == 0) {
-				tooltip.element.style.opacity = 0;
-			}
-		});
-		cell.addEventListener("mousemove", function (e) {
-			tooltip.element.style.left = e.clientX + "px";
-			tooltip.element.style.top = e.clientY + "px";
-			tooltip.element.innerText = cell.style.backgroundImage;
-		});
-		plot.appendChild(cell);
-	}
-	document.getElementById("gameId").innerText = args["gameId"];
-	var seedButtons = {};
-	cropsList.forEach((crop) => {
-		console.log(crop);
-		let buyElement = html`<div class="relative">
-			<p
-				class="absolute right-0 bottom-0 bg-[url('/crops/${crop.name}.png')] text-sm"
-			>
-				0
-			</p>
-		</div>`;
-		render(buyElement, document.getElementById("seeds"));
-		seedButtons[crop.name] =
-			document.getElementById("seeds").children[
-				document.getElementById("seeds").children.length - 1
-			];
-	});
-	onSnapshot(gameDoc, (docSnap) => {
-		if (docSnap.exists()) {
-			console.log("Document data:", docSnap.data());
-		} else {
-			console.log("No such document!");
-		}
-	});
-
 	const playerRef = doc(
 		firestore,
 		"games",
@@ -98,7 +56,122 @@ export async function renderElement(container, args) {
 		"players",
 		args["playerId"],
 	);
-	var playerData = (await getDoc(playerRef)).data();
+	var [gameDocSnapshot, playerSnapshot] = await Promise.all([
+		getDoc(gameDoc),
+		getDoc(playerRef),
+	]);
+	var cropsList = gameDocSnapshot.data().cropsList;
+	console.log(cropsList);
+
+	var playerData = playerSnapshot.data();
+
+	var seedButtons = {};
+	let selectedSeed = "";
+	cropsList.forEach((crop) => {
+		console.log(crop);
+		let container = document.createElement("div");
+		container.style.backgroundImage = `url('/crops/${crop.name}.png')`;
+		let content = html`<p class="absolute right-1 bottom-0 text-sm">0</p>`;
+		document.getElementById("seeds").appendChild(container);
+		render(content, container);
+		container.addEventListener("click", (e) => {
+			if (selectedSeed != "") {
+				seedButtons[selectedSeed].style.borderWidth = "1px";
+			}
+			if (selectedSeed == crop.name) {
+				selectedSeed = "";
+			} else {
+				selectedSeed = crop.name;
+				seedButtons[selectedSeed].style.borderWidth = "3px";
+			}
+		});
+		seedButtons[crop.name] = container;
+	});
+
+	playerData = {
+		_crops: playerData.crops,
+		get crops() {
+			return this._crops;
+		},
+		set crops(val) {
+			this._crops = val;
+		},
+		seeds: new Proxy(playerData.seeds, {
+			set(target, prop, value) {
+				seedButtons[prop].children[0].innerText = value;
+				target[prop] = value;
+				return true;
+			},
+		}),
+		plot: new Proxy(playerData.plot, {
+			set(target, prop, value) {
+				plot.children[prop].style.backgroundImage =
+					"url('/crops/" + value.type + ".png')";
+				target[prop] = value;
+				return true;
+			},
+		}),
+	};
+
+	let tooltip = { element: document.getElementById("tooltip"), numHover: 0 };
+
+	for (let i = 0; i < 25; i++) {
+		let cell = document.createElement("div");
+		cell.innerText = "";
+		cell.addEventListener("click", function () {
+			if (playerData.seeds[selectedSeed] > 0) {
+				fetch("http://localhost:3000/plantSeed", {
+					method: "POST",
+					credentials: "include",
+					body: JSON.stringify({
+						userId: "1",
+						gameId: args["gameId"],
+						seed: selectedSeed,
+						idx: i,
+					}),
+					headers: {
+						"Content-type": "application/json; charset=UTF-8",
+					},
+				});
+				playerData.plot[i] = { type: selectedSeed, stage: 0 };
+				playerData.seeds[selectedSeed]--;
+			}
+		});
+		let hovering = false;
+		cell.addEventListener("mouseenter", function () {
+			if (playerData.plot[i]?.type > "") {
+				tooltip.numHover += 1;
+				tooltip.element.style.opacity = 1;
+				hovering = true;
+			}
+		});
+		cell.addEventListener("mouseleave", function () {
+			if (playerData.plot[i]?.type > "" && hovering) {
+				tooltip.numHover -= 1;
+				if (tooltip.numHover == 0) {
+					tooltip.element.style.opacity = 0;
+				}
+				hovering = false;
+			}
+		});
+		cell.addEventListener("mousemove", function (e) {
+			tooltip.element.style.left = e.clientX + "px";
+			tooltip.element.style.top = e.clientY + "px";
+			tooltip.element.innerText =
+				playerData.plot[i]?.type +
+				", stage " +
+				playerData.plot[i]?.stage;
+		});
+		plot.appendChild(cell);
+	}
+	document.getElementById("gameId").innerText = args["gameId"];
+	onSnapshot(gameDoc, (docSnap) => {
+		if (docSnap.exists()) {
+			console.log("Document data:", docSnap.data());
+		} else {
+			console.log("No such document!");
+		}
+	});
 	console.log(playerData);
 	Object.keys(playerData.plot).forEach((key) => {
 		if (key < 0 || key >= plot.children.length) {
@@ -108,7 +181,7 @@ export async function renderElement(container, args) {
 			"url('/crops/" + playerData.plot[key].type + ".png')";
 	});
 	Object.keys(playerData.crops).forEach((key) => {
-		seedButtons[key].children[0].innerText = playerData.crops[key];
+		seedButtons[key].children[0].innerText = uto0(playerData.seeds[key]);
 	});
 
 	console.log(playerData.crops);
@@ -140,8 +213,4 @@ export async function renderElement(container, args) {
 	// 		console.log("No such document!");
 	// 	}
 	// });
-	const img = new Image();
-	img.src = "/crops/wheat.png";
-	img.onload = () => console.log("Image loaded!");
-	img.onerror = () => console.error("Image failed to load");
 }
