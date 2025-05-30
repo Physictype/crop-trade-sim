@@ -67,10 +67,9 @@ export async function renderElement(container, args) {
 
 	var seedButtons = {};
 	let selectedSeed = "";
-	cropsList.forEach((crop) => {
-		console.log(crop);
+	Object.keys(cropsList).forEach((crop) => {
 		let container = document.createElement("div");
-		container.style.backgroundImage = `url('/crops/${crop.name}.png')`;
+		container.style.backgroundImage = `url('/crops/${crop}.png')`;
 		let content = html`<p class="absolute right-1 bottom-0 text-sm">0</p>`;
 		document.getElementById("seeds").appendChild(container);
 		render(content, container);
@@ -78,14 +77,14 @@ export async function renderElement(container, args) {
 			if (selectedSeed != "") {
 				seedButtons[selectedSeed].style.borderWidth = "1px";
 			}
-			if (selectedSeed == crop.name) {
+			if (selectedSeed == crop) {
 				selectedSeed = "";
 			} else {
-				selectedSeed = crop.name;
+				selectedSeed = crop;
 				seedButtons[selectedSeed].style.borderWidth = "3px";
 			}
 		});
-		seedButtons[crop.name] = container;
+		seedButtons[crop] = container;
 	});
 
 	playerData = {
