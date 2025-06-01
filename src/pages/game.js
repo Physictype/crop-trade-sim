@@ -12,19 +12,38 @@ function uto0(x) {
 }
 
 export async function renderElement(container, args) {
-	const htmlElement = html`<div>
+	const htmlElement = html`<div class="pointer-none select-none">
 		Game ID <span id="gameId"></span>
+		<div>Money: <span id="money"></span></div>
 		<div class="flex gap-4">
 			<div
 				class="grid size-100 grid-cols-5 grid-rows-5 border-2 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
 				id="plot"
 			></div>
-			<div class="border-4 p-2">
-				<h3 class="text-center">Seeds</h3>
-				<div
-					class="grid-rows-auto grid h-90 w-30 grid-cols-2 grid-rows-6 gap-2 [&>*]:relative [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
-					id="seeds"
-				></div>
+			<div>
+				<div class="border-4 p-2">
+					<h3 class="box-heading w-90 text-center">Seeds</h3>
+					<div
+						class="grid-rows-auto grid h-75 w-90 grid-cols-6 grid-rows-5 gap-2 [&>*]:relative [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+						id="seeds"
+					></div>
+				</div>
+			</div>
+			<div class="flex w-90 flex-col items-center gap-1">
+				<div class="border-4 p-2">
+					<h3 class="box-heading w-90 text-center">Offers</h3>
+					<form
+						class="w-full [&>*]:flex [&>*]:items-center"
+						id="offers"
+					></form>
+				</div>
+				<div class="border-4 p-2">
+					<h3 class="box-heading w-90 text-center">Trading</h3>
+					<form
+						class="hidden w-full [&>*]:flex [&>*]:items-center"
+						id="tradms"
+					></form>
+				</div>
 			</div>
 		</div>
 		<div
@@ -34,6 +53,11 @@ export async function renderElement(container, args) {
 		<button id="test">test</button>
 	</div>`;
 	render(htmlElement, container);
+	document.querySelectorAll(".box-heading").forEach((element) => {
+		element.addEventListener("click", () => {
+			element.parentElement.children[1].classList.toggle("hidden");
+		});
+	});
 	document.getElementById("test").addEventListener("click", (e) => {
 		fetch("http://localhost:3000/startGame", {
 			method: "POST",
@@ -48,6 +72,7 @@ export async function renderElement(container, args) {
 		});
 	});
 	let plot = document.getElementById("plot");
+	let money = document.getElementById("money");
 	var gameDoc = doc(firestore, "games", args["gameId"]);
 	const playerRef = doc(
 		firestore,
@@ -60,14 +85,14 @@ export async function renderElement(container, args) {
 		getDoc(gameDoc),
 		getDoc(playerRef),
 	]);
-	var cropsList = gameDocSnapshot.data().cropsList;
-	console.log(cropsList);
+	var availableCrops = gameDocSnapshot.data().availableCrops;
+	console.log(availableCrops);
 
 	var playerData = playerSnapshot.data();
 
 	var seedButtons = {};
 	let selectedSeed = "";
-	Object.keys(cropsList).forEach((crop) => {
+	Object.keys(availableCrops).forEach((crop) => {
 		let container = document.createElement("div");
 		container.style.backgroundImage = `url('/crops/${crop}.png')`;
 		let content = html`<p class="absolute right-1 bottom-0 text-sm">0</p>`;
@@ -85,10 +110,44 @@ export async function renderElement(container, args) {
 			}
 		});
 		seedButtons[crop] = container;
+
+		const offeringDiv = html` <label class="mr-2 whitespace-nowrap"
+				>${crop}:</label
+			>
+			<input
+				type="number"
+				class="w-30 rounded border border-gray-300 px-2 py-1"
+			/>,
+			<input
+				type="number"
+				class="w-30 rounded border border-gray-300 px-2 py-1"
+			/>pp`;
+		const offeringContainer = document.createElement("div");
+		render(offeringDiv, offeringContainer);
+		offeringContainer.children[1].addEventListener("change", (e) => {
+			if (
+				parseInt(offeringContainer.children[1].value) >
+				playerData.crops[crop]
+			) {
+				offeringContainer.children[1].value = playerData.crops[crop];
+			}
+			if (parseInt(offeringContainer.children[1].value) < 0) {
+				offeringContainer.children[1].value = 0;
+			}
+		});
+		offeringContainer.children[2].addEventListener("change", (e) => {
+			if (parseInt(offeringContainer.children[2].value) < 0) {
+				offeringContainer.children[2].value = 0;
+			}
+		});
+		document.getElementById("offers").appendChild(offeringContainer);
 	});
+
+	money.innerText = playerData.money;
 
 	playerData = {
 		_crops: playerData.crops,
+		_money: playerData.money,
 		get crops() {
 			return this._crops;
 		},
@@ -110,6 +169,13 @@ export async function renderElement(container, args) {
 				return true;
 			},
 		}),
+		get money() {
+			return this._money;
+		},
+		set money(val) {
+			money.innerText = val;
+			this._money = val;
+		},
 	};
 
 	let tooltip = { element: document.getElementById("tooltip"), numHover: 0 };
