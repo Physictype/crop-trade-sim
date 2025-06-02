@@ -39,10 +39,13 @@ export async function renderElement(container, args) {
 				</div>
 				<div class="border-4 p-2">
 					<h3 class="box-heading w-90 text-center">Trading</h3>
+					<button>Open Alternate View</button>
 					<form
-						class="hidden w-full [&>*]:flex [&>*]:items-center"
+						class="w-full [&>*]:flex [&>*]:items-center"
 						id="tradms"
-					></form>
+					>
+						<select />
+					</form>
 				</div>
 			</div>
 		</div>
@@ -51,7 +54,15 @@ export async function renderElement(container, args) {
 			id="tooltip"
 		></div>
 		<button id="test">test</button>
+		<div
+			class="fixed inset-0 z-50 flex h-[100%] w-[100%] items-center justify-center bg-black opacity-20"
+		>
+			<div class="bg-white shadow-lg">test</div>
+		</div>
 	</div>`;
+	window.addEventListener("contextmenu", function (e) {
+		e.preventDefault();
+	});
 	render(htmlElement, container);
 	document.querySelectorAll(".box-heading").forEach((element) => {
 		element.addEventListener("click", () => {
@@ -99,6 +110,9 @@ export async function renderElement(container, args) {
 		document.getElementById("seeds").appendChild(container);
 		render(content, container);
 		container.addEventListener("click", (e) => {
+			if (playerData.seeds[crop] == 0) {
+				return;
+			}
 			if (selectedSeed != "") {
 				seedButtons[selectedSeed].style.borderWidth = "1px";
 			}
@@ -220,6 +234,8 @@ export async function renderElement(container, args) {
 			}
 		});
 		cell.addEventListener("mousemove", function (e) {
+			if (playerData.plot[i]?.type > "")
+				tooltip.element.style.opacity = 1;
 			tooltip.element.style.left = e.clientX + "px";
 			tooltip.element.style.top = e.clientY + "px";
 			tooltip.element.innerText =
