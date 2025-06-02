@@ -55,9 +55,15 @@ export async function renderElement(container, args) {
 		></div>
 		<button id="test">test</button>
 		<div
-			class="fixed inset-0 z-50 flex h-[100%] w-[100%] items-center justify-center bg-black opacity-20"
+			class="fixed inset-0 z-50 flex h-full w-full items-center justify-center bg-black/20"
+			id="overlayBackground"
 		>
-			<div class="bg-white shadow-lg">test</div>
+			<div
+				class="h-[90%] w-[90%] rounded-2xl bg-white p-6 opacity-100 shadow-lg"
+				onclick="event.stopPropagation()"
+			>
+				test
+			</div>
 		</div>
 	</div>`;
 	window.addEventListener("contextmenu", function (e) {
