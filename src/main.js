@@ -1,10 +1,11 @@
 import { render } from "preact";
 const routes = {
 	"/login": () => import("/pages/login.js"),
-	"/": () => import("/pages/main.js"),
+	"/": () => import("/pages/home.js"),
 	"/game": () => import("/pages/game.js"),
 	"/404": () => import("/pages/404.js"),
 	"/finishLogin": () => import("/pages/finishLogin.js"),
+	// "/home": () => import("/pages/finishLogin.js"),
 	// "/dashboard": () => import("./pages/dashboard.js"),
 	// "/verify": () => import("./pages/verify.js"),
 };
@@ -14,10 +15,10 @@ async function loadRoute() {
 	console.log(path);
 	var route;
 	var args = {};
+    args["playerId"] = "3";
 	if (path.includes("game")) {
 		route = routes["/game"];
 		args["gameId"] = path.substring(6);
-		args["playerId"] = "1";
 	} else {
 		route = routes[path] || routes["/404"];
 	}

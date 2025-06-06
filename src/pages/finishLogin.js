@@ -11,5 +11,15 @@ export async function renderElement(container, args) {
 		email,
 		window.location.href,
 	);
-	console.log(result);
+    
+	const idToken = await result.user.getIdToken(true);
+
+	await fetch("http://localhost:3000/sessionLogin", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ idToken }),
+		credentials: "include",
+	});
 }

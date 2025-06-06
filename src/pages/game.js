@@ -13,39 +13,59 @@ function uto0(x) {
 
 export async function renderElement(container, args) {
 	const htmlElement = html`<div class="pointer-none select-none">
-		Game ID <span id="gameId"></span>
-		<div>Money: <span id="money"></span></div>
-		<div class="flex gap-4">
+		<div class="flex w-full">
+			<div class="flex-1/2">
+				<div>Game ID <span id="gameId"></span></div>
+				<div>Money: <span id="money"></span></div>
+			</div>
+			<div class="flex-1/2 text-right text-6xl" id="timer">0:00</div>
+		</div>
+		<br />
+		<div class="flex gap-1">
 			<div
-				class="grid size-100 grid-cols-5 grid-rows-5 border-2 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+				class="grid size-120 grid-cols-5 grid-rows-5 border-2 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
 				id="plot"
 			></div>
-			<div>
+			<div class="flex flex-col gap-1">
 				<div class="border-4 p-2">
 					<h3 class="box-heading w-90 text-center">Seeds</h3>
+					<div>
+						<div
+							class="grid-rows-auto grid w-90 grid-cols-6 gap-2 [&>*]:relative [&>*]:h-[53.33px] [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+							id="seeds"
+						></div>
+						<button>Open Marketplace</button>
+					</div>
+				</div>
+				<div class="border-4 p-2">
+					<h3 class="box-heading w-90 text-center">Crops</h3>
 					<div
-						class="grid-rows-auto grid h-75 w-90 grid-cols-6 grid-rows-5 gap-2 [&>*]:relative [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
-						id="seeds"
+						class="grid-rows-auto grid w-90 grid-cols-6 gap-2 [&>*]:relative [&>*]:h-[53.33px] [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+						id="crops"
 					></div>
 				</div>
 			</div>
 			<div class="flex w-90 flex-col items-center gap-1">
-				<div class="border-4 p-2">
-					<h3 class="box-heading w-90 text-center">Offers</h3>
+				<div class="w-full border-4 p-2">
+					<h3 class="box-heading w-full text-center">Offers</h3>
 					<form
 						class="w-full [&>*]:flex [&>*]:items-center"
 						id="offers"
 					></form>
 				</div>
-				<div class="border-4 p-2">
-					<h3 class="box-heading w-90 text-center">Trading</h3>
-					<button>Open Alternate View</button>
-					<form
-						class="w-full [&>*]:flex [&>*]:items-center"
-						id="tradms"
-					>
-						<select />
-					</form>
+				<div class="w-full border-4 p-2">
+					<h3 class="box-heading w-full text-center">Trading</h3>
+					<div>
+						<button id="tradeViewButton">
+							Open Alternate View
+						</button>
+						<form
+							class="w-full [&>*]:flex [&>*]:items-center"
+							id="trades"
+						>
+							<select />
+						</form>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -55,14 +75,17 @@ export async function renderElement(container, args) {
 		></div>
 		<button id="test">test</button>
 		<div
-			class="fixed inset-0 z-50 flex h-full w-full items-center justify-center bg-black/20"
-			id="overlayBackground"
+			class="fixed inset-0 z-50 flex hidden h-full w-full items-center justify-center bg-black/20"
+			id="tradeOverlayBackground"
 		>
 			<div
 				class="h-[90%] w-[90%] rounded-2xl bg-white p-6 opacity-100 shadow-lg"
-				onclick="event.stopPropagation()"
 			>
-				test
+				<h3 class="text-center">Trading Stands</h3>
+				<div
+					class="grid w-full grid-cols-4 gap-5"
+					id="tradingStands"
+				></div>
 			</div>
 		</div>
 	</div>`;
@@ -70,6 +93,19 @@ export async function renderElement(container, args) {
 		e.preventDefault();
 	});
 	render(htmlElement, container);
+	let tradeOverlay = document.getElementById("tradeOverlayBackground");
+	tradeOverlay.children[0].addEventListener("click", (e) => {
+		e.stopPropagation();
+	});
+	tradeOverlay.addEventListener("click", (e) => {
+		tradeOverlay.classList.toggle("hidden");
+	});
+	document
+		.getElementById("tradeViewButton")
+		.addEventListener("click", (e) => {
+			tradeOverlay.classList.toggle("hidden");
+		});
+
 	document.querySelectorAll(".box-heading").forEach((element) => {
 		element.addEventListener("click", () => {
 			element.parentElement.children[1].classList.toggle("hidden");
@@ -80,7 +116,7 @@ export async function renderElement(container, args) {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({
-				userId: "1",
+				userId: "3",
 				gameId: args["gameId"],
 			}),
 			headers: {
@@ -102,9 +138,17 @@ export async function renderElement(container, args) {
 		getDoc(gameDoc),
 		getDoc(playerRef),
 	]);
-	var availableCrops = gameDocSnapshot.data().availableCrops;
+	var gameDocData = gameDocSnapshot.data();
+	var availableCrops = gameDocData.availableCrops;
 	console.log(availableCrops);
-
+	var timer = document.getElementById("timer");
+	setInterval(() => {
+		let seconds = Math.ceil((gameDocData.endTimestamp - Date.now()) / 1000);
+		timer.innerText =
+			Math.floor(seconds / 60) +
+			":" +
+			(seconds % 60).toString().padStart(2, "0");
+	});
 	var playerData = playerSnapshot.data();
 
 	var seedButtons = {};
@@ -136,12 +180,12 @@ export async function renderElement(container, args) {
 			>
 			<input
 				type="number"
-				class="w-30 rounded border border-gray-300 px-2 py-1"
+				class="w-25 rounded border border-gray-300 px-2 py-1"
 			/>,
 			<input
 				type="number"
-				class="w-30 rounded border border-gray-300 px-2 py-1"
-			/>pp`;
+				class="w-25 rounded border border-gray-300 px-2 py-1"
+			/>price per`;
 		const offeringContainer = document.createElement("div");
 		render(offeringDiv, offeringContainer);
 		offeringContainer.children[1].addEventListener("change", (e) => {
@@ -209,7 +253,7 @@ export async function renderElement(container, args) {
 					method: "POST",
 					credentials: "include",
 					body: JSON.stringify({
-						userId: "1",
+						userId: "3",
 						gameId: args["gameId"],
 						seed: selectedSeed,
 						idx: i,
@@ -233,10 +277,10 @@ export async function renderElement(container, args) {
 		cell.addEventListener("mouseleave", function () {
 			if (playerData.plot[i]?.type > "" && hovering) {
 				tooltip.numHover -= 1;
-				if (tooltip.numHover == 0) {
-					tooltip.element.style.opacity = 0;
-				}
 				hovering = false;
+			}
+			if (tooltip.numHover == 0) {
+				tooltip.element.style.opacity = 0;
 			}
 		});
 		cell.addEventListener("mousemove", function (e) {
