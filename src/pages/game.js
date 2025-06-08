@@ -17,6 +17,8 @@ export async function renderElement(container, args) {
 			<div class="flex-1/2">
 				<div>Game ID <span id="gameId"></span></div>
 				<div>Money: <span id="money"></span></div>
+				<div>Season: <span id="season">Spring</span></div>
+				<div>Stage: <span id="stage">Planting</span></div>
 			</div>
 			<div class="flex-1/2 text-right text-6xl" id="timer">0:00</div>
 		</div>
@@ -191,7 +193,7 @@ export async function renderElement(container, args) {
 		document.getElementById("seeds").appendChild(container);
 		render(content, container);
 		container.addEventListener("click", (e) => {
-			if (playerData.seeds[crop] == 0) {
+			if (uto0(playerData.seeds[crop]) == 0) {
 				return;
 			}
 			if (selectedSeed != "") {
@@ -339,7 +341,7 @@ export async function renderElement(container, args) {
 		seeds: new Proxy(playerData.seeds, {
 			set(target, prop, value) {
 				seedButtons[prop].children[0].innerText = value;
-				target[prop] = value;
+				target[prop] = uto0(value);
 				return true;
 			},
 		}),
@@ -431,21 +433,38 @@ export async function renderElement(container, args) {
 	Object.keys(playerData.crops).forEach((key) => {
 		seedButtons[key].children[0].innerText = uto0(playerData.seeds[key]);
 	});
-
-	console.log(playerData.crops);
-	Object.keys(playerData.crops).forEach((key) => {
-		console.log(playerData.crops[key]);
-	});
 	onSnapshot(gameDoc, (docSnap) => {
 		if (docSnap.exists() && timer.innerText == "0:00") {
 			let data = docSnap.data();
 			gameDocData = data;
-			availableCrops = data.availableCrops;
 			Object.keys(availableCrops).forEach((crop) => {
 				if (seedButtons[crop]) {
 					seedButtons[crop].children[0].innerText =
 						playerData.seeds[crop];
 				}
+			});
+			document.getElementById("season").innerText = [
+				"Spring",
+				"Summer",
+				"Fall",
+				"Winter",
+			][data.season];
+			document.getElementById("stage").innerText = data.roundSection;
+			getDoc(playerRef).then((playerDocSnap) => {
+				let data = playerDocSnap.data();
+				playerData.crops = data.crops;
+				playerData.money = data.money;
+				Object.keys(data.plot).forEach((key) => {
+					if (key < 0 || key >= plot.children.length) {
+						return;
+					}
+					playerData.plot[key] = data.plot[key];
+				});
+				console.log(playerData.seeds);
+				Object.keys(data.seeds).forEach((key) => {
+					console.log(key, data.seeds[key]);
+					playerData.seeds[key] = data.seeds[key];
+				});
 			});
 			let seconds = Math.ceil((data.endTimestamp - Date.now()) / 1000);
 			if (seconds < 0) {
@@ -455,17 +474,6 @@ export async function renderElement(container, args) {
 				Math.floor(seconds / 60) +
 				":" +
 				(seconds % 60).toString().padStart(2, "0");
-		}
-	});
-	onSnapshot(playerRef, (docSnap) => {
-		if (docSnap.exists()) {
-			let data = docSnap.data();
-			playerData.crops = data.crops;
-			playerData.money = data.money;
-			playerData.plot = data.plot;
-			playerData.seeds = data.seeds;
-		} else {
-			console.log("No such document!");
 		}
 	});
 }

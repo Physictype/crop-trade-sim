@@ -38,7 +38,7 @@ export async function renderElement(container, args) {
 			},
 		})
 			.then((value) => {
-				if (value.ok) {
+				if (value.ok || value.message !== "Game already started") {
 					window.location.pathname =
 						"/game/" + document.getElementById("gameId").value;
 				} else {

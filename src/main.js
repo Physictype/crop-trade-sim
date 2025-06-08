@@ -32,3 +32,8 @@ async function loadRoute() {
 
 window.addEventListener("hashchange", loadRoute);
 window.addEventListener("load", loadRoute);
+console.log("loaded");
+if (window.localStorage.getItem("userId") === null) {
+	window.location.replace("/login");
+}
+console.log(document.cookie);
