@@ -34,7 +34,12 @@ export async function renderElement(container, args) {
 							class="grid-rows-auto grid w-90 grid-cols-6 gap-2 [&>*]:relative [&>*]:h-[53.33px] [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
 							id="seeds"
 						></div>
-						<button>Open Marketplace</button>
+						<button
+							class="overlay-button"
+							data-pointer="marketOverlay"
+						>
+							Open Marketplace
+						</button>
 					</div>
 				</div>
 				<div class="border-4 p-2">
@@ -56,8 +61,11 @@ export async function renderElement(container, args) {
 				<div class="w-full border-4 p-2">
 					<h3 class="box-heading w-full text-center">Trading</h3>
 					<div>
-						<button id="tradeViewButton">
-							Open Alternate View
+						<button
+							class="overlay-button"
+							data-pointer="tradeOverlay"
+						>
+							Open Trading Stands
 						</button>
 						<form
 							class="w-full [&>*]:flex [&>*]:items-center"
@@ -76,7 +84,7 @@ export async function renderElement(container, args) {
 		<button id="test">test</button>
 		<div
 			class="fixed inset-0 z-50 flex hidden h-full w-full items-center justify-center bg-black/20"
-			id="tradeOverlayBackground"
+			id="tradeOverlay"
 		>
 			<div
 				class="h-[90%] w-[90%] rounded-2xl bg-white p-6 opacity-100 shadow-lg"
@@ -88,23 +96,37 @@ export async function renderElement(container, args) {
 				></div>
 			</div>
 		</div>
+		<div
+			class="fixed inset-0 z-50 flex hidden h-full w-full items-center justify-center bg-black/20"
+			id="marketOverlay"
+		>
+			<div
+				class="h-[90%] w-[90%] rounded-2xl bg-white p-6 opacity-100 shadow-lg"
+			>
+				<h3 class="text-center">Marketplace</h3>
+				<div
+					class="grid w-full grid-cols-2 gap-5"
+					id="marketplace"
+				></div>
+			</div>
+		</div>
 	</div>`;
 	window.addEventListener("contextmenu", function (e) {
 		e.preventDefault();
 	});
 	render(htmlElement, container);
-	let tradeOverlay = document.getElementById("tradeOverlayBackground");
-	tradeOverlay.children[0].addEventListener("click", (e) => {
-		e.stopPropagation();
-	});
-	tradeOverlay.addEventListener("click", (e) => {
-		tradeOverlay.classList.toggle("hidden");
-	});
-	document
-		.getElementById("tradeViewButton")
-		.addEventListener("click", (e) => {
-			tradeOverlay.classList.toggle("hidden");
+	document.querySelectorAll(".overlay-button").forEach((element) => {
+		let overlay = document.getElementById(element.dataset.pointer);
+		overlay.children[0].addEventListener("click", (e) => {
+			e.stopPropagation();
 		});
+		overlay.addEventListener("click", (e) => {
+			overlay.classList.toggle("hidden");
+		});
+		element.addEventListener("click", (e) => {
+			overlay.classList.toggle("hidden");
+		});
+	});
 
 	document.querySelectorAll(".box-heading").forEach((element) => {
 		element.addEventListener("click", () => {
@@ -116,7 +138,6 @@ export async function renderElement(container, args) {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({
-				userId: "3",
 				gameId: args["gameId"],
 			}),
 			headers: {
@@ -144,6 +165,14 @@ export async function renderElement(container, args) {
 	var timer = document.getElementById("timer");
 	setInterval(() => {
 		let seconds = Math.ceil((gameDocData.endTimestamp - Date.now()) / 1000);
+		if (seconds < 0) {
+			seconds = 0;
+		}
+		if (seconds <= 5) {
+			timer.style.color = "red";
+		} else {
+			timer.style.color = "black";
+		}
 		timer.innerText =
 			Math.floor(seconds / 60) +
 			":" +
@@ -156,7 +185,9 @@ export async function renderElement(container, args) {
 	Object.keys(availableCrops).forEach((crop) => {
 		let container = document.createElement("div");
 		container.style.backgroundImage = `url('/crops/${crop}.png')`;
-		let content = html`<p class="absolute right-1 bottom-0 text-sm">0</p>`;
+		let content = html`<p class="absolute right-1 bottom-0 text-sm">
+			${uto0(playerData.seeds[crop])}
+		</p>`;
 		document.getElementById("seeds").appendChild(container);
 		render(content, container);
 		container.addEventListener("click", (e) => {
@@ -205,6 +236,93 @@ export async function renderElement(container, args) {
 			}
 		});
 		document.getElementById("offers").appendChild(offeringContainer);
+
+		let cropRow = html`<div class="flex h-20 w-full gap-10">
+			<div class="text-center">
+				<div
+					class="h-20 w-20 bg-contain bg-no-repeat"
+					style="background-image: url('/crops/${crop}.png');"
+				></div>
+				<p>${crop}</p>
+			</div>
+			<div>
+				<p>Harvest in:</p>
+				<p>Minimum seasons: ${availableCrops[crop].minSeasons}</p>
+				<p>Maximum scored: ${availableCrops[crop].max}</p>
+			</div>
+			<div class="flex gap-2">
+				<div>
+					<input class="w-30" type="number" min="0" />
+					<p>Total Cost: <span>0</span></p>
+					<p>
+						Price per:
+						<span>${availableCrops[crop].basePrice}</span>
+					</p>
+				</div>
+				<button class="rounded bg-blue-500 px-4 py-2 text-white">
+					Buy
+				</button>
+			</div>
+		</div>`;
+		let temp = document.createElement("div");
+		render(cropRow, temp);
+		console.log(temp);
+		let buyFields = temp.children[0].children[2].children[0];
+		buyFields.children[0].addEventListener("change", (e) => {
+			let amount = parseInt(buyFields.children[0].value);
+			console.log(amount);
+			if (isNaN(amount) || amount < 0) {
+				amount = 0;
+			}
+			let totalCost = Math.round(
+				availableCrops[crop].basePrice * Math.pow(amount, 0.9),
+			);
+			if (totalCost > playerData.money) {
+				amount = Math.floor(
+					Math.pow(
+						playerData.money / availableCrops[crop].basePrice,
+						1 / 0.9,
+					),
+				);
+				buyFields.children[0].value = amount;
+				totalCost = Math.round(
+					availableCrops[crop].basePrice * Math.pow(amount, 0.9),
+				);
+			}
+			console.log(totalCost);
+			let pricePer = totalCost / amount || availableCrops[crop].basePrice;
+			buyFields.children[1].children[0].innerText = totalCost;
+			buyFields.children[2].children[0].innerText = pricePer.toFixed(2);
+		});
+		let buyButton = temp.children[0].children[2].children[1];
+		buyButton.addEventListener("click", (e) => {
+			let amount = parseInt(buyFields.children[0].value);
+			console.log(amount);
+			if (isNaN(amount) || amount <= 0) {
+				return;
+			}
+			let totalCost = Math.round(
+				availableCrops[crop].basePrice * Math.pow(amount, 0.9),
+			);
+			playerData.money -= totalCost;
+			playerData.seeds[crop] += amount;
+			buyFields.children[0].value = 0;
+			buyFields.children[1].children[0].innerText = 0;
+			buyFields.children[2].children[0].innerText = 0;
+			fetch("http://localhost:3000/buySeed", {
+				method: "POST",
+				credentials: "include",
+				body: JSON.stringify({
+					gameId: args["gameId"],
+					seed: crop,
+					count: amount,
+				}),
+				headers: {
+					"Content-type": "application/json; charset=UTF-8",
+				},
+			});
+		});
+		document.getElementById("marketplace").appendChild(temp.children[0]);
 	});
 
 	money.innerText = playerData.money;
@@ -253,7 +371,6 @@ export async function renderElement(container, args) {
 					method: "POST",
 					credentials: "include",
 					body: JSON.stringify({
-						userId: "3",
 						gameId: args["gameId"],
 						seed: selectedSeed,
 						idx: i,
@@ -319,29 +436,36 @@ export async function renderElement(container, args) {
 	Object.keys(playerData.crops).forEach((key) => {
 		console.log(playerData.crops[key]);
 	});
-
-	// REMOVE!!! replace with client logic.
-	// onSnapshot(playerRef, (docSnap) => {
-	// 	if (docSnap.exists()) {
-	// 		console.log("Document data:", docSnap.data());
-	// 		let data = docSnap.data();
-	// 		Object.keys(data.plot).forEach((key) => {
-	// 			if (key < 0 || key >= plot.children.length) {
-	// 				return;
-	// 			}
-	// 			plot.children[key].style.backgroundImage =
-	// 				"url('/crops/" + data.plot[key].type + ".png')";
-	// 		});
-	// 		// for (let i = 0; i < data.plot.length; i++) {
-	// 		// 	plot.children[i].style.backgroundImage =
-	// 		// 		"url('/crops/" + data.plot[i].type + ".png')";
-	// 		// }
-	// 		console.log(data.crops);
-	// 		Object.keys(data.crops).forEach((key) => {
-	// 			console.log(data.crops[key]);
-	// 		});
-	// 	} else {
-	// 		console.log("No such document!");
-	// 	}
-	// });
+	onSnapshot(gameDoc, (docSnap) => {
+		if (docSnap.exists() && timer.innerText == "0:00") {
+			let data = docSnap.data();
+			gameDocData = data;
+			availableCrops = data.availableCrops;
+			Object.keys(availableCrops).forEach((crop) => {
+				if (seedButtons[crop]) {
+					seedButtons[crop].children[0].innerText =
+						playerData.seeds[crop];
+				}
+			});
+			let seconds = Math.ceil((data.endTimestamp - Date.now()) / 1000);
+			if (seconds < 0) {
+				seconds = 0;
+			}
+			timer.innerText =
+				Math.floor(seconds / 60) +
+				":" +
+				(seconds % 60).toString().padStart(2, "0");
+		}
+	});
+	onSnapshot(playerRef, (docSnap) => {
+		if (docSnap.exists()) {
+			let data = docSnap.data();
+			playerData.crops = data.crops;
+			playerData.money = data.money;
+			playerData.plot = data.plot;
+			playerData.seeds = data.seeds;
+		} else {
+			console.log("No such document!");
+		}
+	});
 }

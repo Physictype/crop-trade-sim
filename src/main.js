@@ -15,7 +15,8 @@ async function loadRoute() {
 	console.log(path);
 	var route;
 	var args = {};
-    args["playerId"] = "3";
+	args["playerId"] = window.localStorage.getItem("userId") || null;
+	console.log(args["playerId"]);
 	if (path.includes("game")) {
 		route = routes["/game"];
 		args["gameId"] = path.substring(6);

@@ -11,7 +11,7 @@ export async function renderElement(container, args) {
 		email,
 		window.location.href,
 	);
-    
+
 	const idToken = await result.user.getIdToken(true);
 
 	await fetch("http://localhost:3000/sessionLogin", {
@@ -22,4 +22,6 @@ export async function renderElement(container, args) {
 		body: JSON.stringify({ idToken }),
 		credentials: "include",
 	});
+	window.location.replace("/");
+	window.localStorage.setItem("userId", result.user.uid);
 }
