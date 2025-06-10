@@ -212,7 +212,7 @@ export async function renderElement(container, args) {
 		></div>
 		<button id="test">test</button>
 		<div
-			class="fixed inset-0 z-50 flex hidden h-full w-full items-center justify-center bg-black/20"
+			class="fixed inset-0 z-50 flex !hidden h-full w-full items-center justify-center bg-black/20"
 			id="tradeOverlay"
 		>
 			<div
@@ -226,7 +226,7 @@ export async function renderElement(container, args) {
 			</div>
 		</div>
 		<div
-			class="fixed inset-0 z-50 flex hidden h-full w-full items-center justify-center bg-black/20"
+			class="fixed inset-0 z-50 flex !hidden h-full w-full items-center justify-center bg-black/20"
 			id="marketOverlay"
 		>
 			<div
@@ -250,16 +250,16 @@ export async function renderElement(container, args) {
 			e.stopPropagation();
 		});
 		overlay.addEventListener("click", (e) => {
-			overlay.classList.toggle("hidden");
+			overlay.classList.toggle("!hidden");
 		});
 		element.addEventListener("click", (e) => {
-			overlay.classList.toggle("hidden");
+			overlay.classList.toggle("!hidden");
 		});
 	});
 
 	document.querySelectorAll(".box-heading").forEach((element) => {
 		element.addEventListener("click", () => {
-			element.parentElement.children[1].classList.toggle("hidden");
+			element.parentElement.children[1].classList.toggle("!hidden");
 		});
 	});
 	document.getElementById("test").addEventListener("click", (e) => {
@@ -712,7 +712,7 @@ export async function renderElement(container, args) {
 				(seconds % 60).toString().padStart(2, "0");
 			let offersElement = document.getElementById("offers");
 			if (gameDocData.roundSection == "Trading") {
-				offersElement.classList.add("hidden");
+				offersElement.classList.add("!hidden");
 				Array.from(offersElement.children).forEach((element) => {
 					element.children[1].disabled = true;
 					element.children[2].disabled = true;

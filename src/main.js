@@ -5,6 +5,7 @@ const routes = {
 	"/game": () => import("/pages/game.js"),
 	"/404": () => import("/pages/404.js"),
 	"/finishLogin": () => import("/pages/finishLogin.js"),
+	"/host": () => import("/pages/host.js"),
 	// "/home": () => import("/pages/finishLogin.js"),
 	// "/dashboard": () => import("./pages/dashboard.js"),
 	// "/verify": () => import("./pages/verify.js"),
@@ -22,6 +23,10 @@ async function loadRoute() {
 		args["gameId"] = path.substring(6);
 	} else {
 		route = routes[path] || routes["/404"];
+	}
+	if (path.includes("host")) {
+		route = routes["/host"];
+		args["gameId"] = path.substring(6);
 	}
 	console.log("u gud bro");
 	const module = await route();
