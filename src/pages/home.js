@@ -17,6 +17,9 @@ export async function renderElement(container, args) {
 			<label>Game ID</label>
 			<input type="text" id="gameId" />
 			<br />
+			<label>Nickname: </label>
+			<input type="text" id="nickname" />
+			<br />
 			<button id="joinButton">Join Game</button>
 		</form>
 	</div>`;
@@ -30,8 +33,8 @@ export async function renderElement(container, args) {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({
-				userId: "3",
 				gameId: document.getElementById("gameId").value,
+				nickname: document.getElementById("nickname").value,
 			}),
 			headers: {
 				"Content-type": "application/json; charset=UTF-8",

@@ -14,7 +14,7 @@ export function renderElement(container, args) {
 				id="sendLink"
 				class="rounded-xl bg-blue-500 p-2 text-amber-50"
 			>
-				Send Link (I love the fact I'm just using this for tests)
+				Send Link
 			</button>
 		</div>
 	`;
@@ -23,7 +23,7 @@ export function renderElement(container, args) {
 	document.getElementById("sendLink").addEventListener("click", function () {
 		// fetch("https://localhost:3000/buySeed", {
 		// 	method: "POST",
-        //     credentials: 'include',
+		//     credentials: 'include',
 		// 	body: JSON.stringify({
 		// 		userId: 1,
 		// 		gameId: 28291038,

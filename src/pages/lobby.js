@@ -14,8 +14,7 @@ function uto0(x) {
 export async function renderElement(container, args) {
 	const htmlElement = html`<div class="pointer-none select-none">
 		<form>
-			<label>Nickname: </label>
-			<input type="text" id="gameId" />
+			
 			<br />
 			<button id="joinButton">Join Lobby</button>
 		</form>
