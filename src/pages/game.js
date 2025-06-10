@@ -312,7 +312,7 @@ export async function renderElement(container, args) {
 		if (seconds < 0) {
 			seconds = 0;
 		}
-		if (seconds <= 5) {
+		if (seconds <= 10) {
 			timer.style.color = "red";
 		} else {
 			timer.style.color = "black";
