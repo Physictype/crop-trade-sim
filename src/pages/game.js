@@ -17,6 +17,86 @@ function uto0(x) {
 	return x;
 }
 
+function nestedIndex(obj, path) {
+	let curr = obj;
+	path.split(".").forEach((segment) => {
+		curr = curr[segment];
+	});
+	return curr;
+}
+
+function expandKeys(obj,path) {
+    if (path.split(".").length == 1) {
+        if (path == "*") {
+            return Object.keys(obj);
+        } else {
+            return path;
+        }
+    }
+    let split = path.split(/\.(.*)/s);
+    let head = split[0];
+    let tail = split[1];
+    let res = [];
+    if (head == "*") {
+        Object.keys(obj).forEach((key) => {
+            expandKeys(obj[key],tail).forEach((pathTail) => {
+                res.push(key+"."+pathTail);
+            });
+        });
+    } else {
+        expandKeys(obj[head],tail).forEach((pathTail) => {
+            res.push(head+"."+pathTail);
+        });
+    }
+    return res;
+}
+
+function evaluateUpgrade(data, upgrade, target) {
+	if (typeof upgrade == "undefined") {
+		return NaN;
+	}
+	if (typeof upgrade == "number") {
+		return upgrade;
+	}
+    if (upgrade == "this") {
+        return nestedIndex(data,target);
+    }
+	if (typeof upgrade == "string") {
+		return nestedIndex(data, upgrade);
+	}
+	let leftEval = evaluateUpgrade(data, upgrade.left);
+	let rightEval = evaluateUpgrade(data, upgrade.right);
+	switch (upgrade.operation) {
+		case "+":
+			return leftEval + rightEval;
+		case "-":
+			return leftEval - rightEval;
+		case "*":
+			return leftEval * rightEval;
+		case "/":
+			return leftEval / rightEval;
+		case "&":
+			return leftEval & rightEval;
+		case "|":
+			return leftEval | rightEval;
+		default:
+			return NaN;
+	}
+}
+function applyUpgradeBundles(_player, _data) {
+	let data = _.cloneDeep(_data);
+	data.player = _.cloneDeep(_player);
+    _player.upgradeBundles.forEach((upgradeBundle) => {
+        upgradeBundle.upgrades.forEach((upgrade) => {
+            let _data = _.cloneDeep(data);
+            expandKeys(upgrade.target).forEach((key) => {
+                nestedIndex(data.player,key) = evaluateUpgrade(_data, upgrade, key);
+            });
+        });
+    })
+	return data.player;
+}
+
 async function renderTradeStand(container, playerId, gameId, availableCrops) {
 	let playerRef = doc(firestore, "games", gameId, "players", playerId);
 	let playerData = (await getDoc(playerRef)).data();
@@ -158,7 +238,7 @@ export async function renderElement(container, args) {
 		<br />
 		<div class="flex gap-1">
 			<div
-				class="grid size-120 grid-cols-5 grid-rows-5 border-2 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
+				class="grid border-1 bg-amber-100 [&>*]:h-full [&>*]:w-full [&>*]:border-1 [&>*]:bg-contain [&>*]:bg-no-repeat [&>*]:object-contain"
 				id="plot"
 			></div>
 			<div class="flex flex-col gap-1">
@@ -210,9 +290,8 @@ export async function renderElement(container, args) {
 			class="pointer-events-none absolute m-1 h-37 w-50 bg-amber-300 p-2 opacity-0"
 			id="tooltip"
 		></div>
-		<button id="test">test</button>
 		<div
-			class="fixed inset-0 z-50 flex !hidden h-full w-full items-center justify-center bg-black/20"
+			class="fixed inset-0 z-50 !hidden flex h-full w-full items-center justify-center bg-black/20"
 			id="tradeOverlay"
 		>
 			<div
@@ -226,7 +305,7 @@ export async function renderElement(container, args) {
 			</div>
 		</div>
 		<div
-			class="fixed inset-0 z-50 flex !hidden h-full w-full items-center justify-center bg-black/20"
+			class="fixed inset-0 z-50 !hidden flex h-full w-full items-center justify-center bg-black/20"
 			id="marketOverlay"
 		>
 			<div
@@ -262,18 +341,6 @@ export async function renderElement(container, args) {
 			element.parentElement.children[1].classList.toggle("!hidden");
 		});
 	});
-	document.getElementById("test").addEventListener("click", (e) => {
-		fetch("http://localhost:3000/startGame", {
-			method: "POST",
-			credentials: "include",
-			body: JSON.stringify({
-				gameId: args["gameId"],
-			}),
-			headers: {
-				"Content-type": "application/json; charset=UTF-8",
-			},
-		});
-	});
 	let plot = document.getElementById("plot");
 	let money = document.getElementById("money");
 	var gameDoc = doc(firestore, "games", args["gameId"]);
@@ -290,12 +357,14 @@ export async function renderElement(container, args) {
 	]);
 	if (gameDocSnapshot.exists() == false) {
 		console.error("Game not found");
-	}
-	if (playerSnapshot.exists() == false) {
-		console.error("Player not in game");
 		window.location.replace("/");
 	}
 	var gameDocData = gameDocSnapshot.data();
+	plot.style.gridTemplateColumns = `repeat(${gameDocData.plotWidth}, minmax(0, 1fr)`;
+	plot.style.gridTemplateRows = `repeat(${gameDocData.plotHeight}, minmax(0, 1fr)`;
+	let maxDim = Math.max(gameDocData.plotWidth, gameDocData.plotHeight);
+	plot.style.width = (600 / maxDim) * gameDocData.plotWidth + "px";
+	plot.style.height = (600 / maxDim) * gameDocData.plotHeight + "px";
 	document.getElementById("season").innerText = [
 		"Spring",
 		"Summer",
@@ -309,6 +378,9 @@ export async function renderElement(container, args) {
 	var timer = document.getElementById("timer");
 	setInterval(() => {
 		let seconds = Math.ceil((gameDocData.endTimestamp - Date.now()) / 1000);
+		if (isNaN(seconds)) {
+			seconds = 0;
+		}
 		if (seconds < 0) {
 			seconds = 0;
 		}
@@ -578,7 +650,7 @@ export async function renderElement(container, args) {
 
 	let tooltip = { element: document.getElementById("tooltip"), numHover: 0 };
 
-	for (let i = 0; i < 25; i++) {
+	for (let i = 0; i < gameDocData.plotWidth * gameDocData.plotHeight; i++) {
 		let cell = document.createElement("div");
 		cell.innerText = "";
 		cell.addEventListener("click", function () {

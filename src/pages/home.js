@@ -17,6 +17,7 @@ function uto0(x) {
 	return x;
 }
 
+
 export async function renderElement(container, args) {
 	const htmlElement = html`<div class="pointer-none select-none">
 		<div>
@@ -55,9 +56,9 @@ export async function renderElement(container, args) {
 					<label>Initial money: </label>
 					<input type="number" id="initialMoney" value="100000" />
 					<label>Plot width: </label>
-					<input type="number" id="plotWidth" value="5" />
+					<input type="number" id="plotWidth" value="6" />
 					<label>Plot height: </label>
-					<input type="number" id="plotHeight" value="5" />
+					<input type="number" id="plotHeight" value="6" />
 					<br />
 					<h3 class="text-xl">Crops</h3>
 					<label>Selected crops:</label>
@@ -160,8 +161,8 @@ export async function renderElement(container, args) {
 		offeringTime: 60,
 		tradingTime: 150,
 		initialMoney: 100000,
-		plotWidth: 5,
-		plotHeight: 5,
+		plotWidth: 6,
+		plotHeight: 6,
 		availableCrops: {},
 	};
 
